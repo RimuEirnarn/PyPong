@@ -1,5 +1,5 @@
 """Logging utility"""
-from atexit import register as atexit_register
+# from atexit import register as atexit_register
 from logging import FileHandler, Formatter, Logger, StreamHandler, getLogger
 from sys import stderr, stdout
 
@@ -18,10 +18,10 @@ def setup_logger(name: str, config: SetupConfig):
     if config.console == 'stdout':
         output = stdout
 
-    def shutdown_log():
-        logger.info("Reaching end of interpreter, closing...")
+    # def shutdown_log():
+        # logger.info("Reaching end of interpreter, closing...")
 
-    atexit_register(shutdown_log)
+    # atexit_register(shutdown_log)
     if output is None:
         handler_file.setFormatter(formatter)
         logger.addHandler(handler_file)

@@ -161,3 +161,6 @@ cython_debug/
 .venv
 idk.py
 client-log.txt
+idk2.py
+*.no
+gamelog.txt

@@ -1,4 +1,5 @@
 """Client library"""
+from binascii import Error as BinasciiError
 from selectors import DefaultSelector, SelectorKey
 from socket import AF_INET, SOCK_STREAM
 from socket import socket as SocketClass
@@ -22,23 +23,33 @@ class Client:  # pylint: disable=too-many-instance-attributes
 
     def __init__(self, addr: ServerAddr) -> None:
         self._addr = addr
+        self._placeholder = addr == ("", 0)
         self._host = addr[0]
         self._port = addr[1]
         self._selector = DefaultSelector()
         self._socket = SocketClass(AF_INET, SOCK_STREAM)
         # self._socket = LoggedSocket(AF_INET, SOCK_STREAM)
         # self._socket.put_logger(ClientLog)
-        self._socket.connect(addr)
-        self._socket.setblocking(False)
         self._response = IOMessage(addr)
+        if not self._placeholder:
+            self._socket.connect(addr)
+            self._socket.setblocking(False)
+            self._thread = Thread(target=self._process_request)
+            self._selector.register(self._socket, EVENT_READ, self._response)
         self._data = Message("")
         self._running = Event()
-        self._thread = Thread(target=self._process_request)
+        self._running.clear()
         self._reading = TruthEvent()
-        self._selector.register(self._socket, EVENT_READ, self._response)
+
+    @property
+    def running(self):
+        """Is client running?"""
+        return self._running.is_set()
 
     def push(self, data: Any):
         """Push data to server"""
+        if self._placeholder:
+            raise RuntimeError("Cannot push in placeholder client")
         ClientLog.debug("Sending data")
         x = self._socket.send(make_message(data, {}))
         # ClientLog.debug(x)
@@ -46,6 +57,8 @@ class Client:  # pylint: disable=too-many-instance-attributes
 
     def read(self) -> bytes:
         """Read data from server"""
+        if self._placeholder:
+            raise RuntimeError("Cannot push in placeholder client")
         ClientLog.debug("Reading data")
         while self._response.output == b'':
             sleep(0.1)
@@ -66,6 +79,8 @@ class Client:  # pylint: disable=too-many-instance-attributes
             event_read(key, self._selector)
 
     def _process_request(self):
+        if self._placeholder:
+            raise RuntimeError("Cannot push in placeholder client")
         self._running.set()
         try:
             while self._running.is_set():
@@ -86,6 +101,8 @@ class Client:  # pylint: disable=too-many-instance-attributes
 
     def stop(self):
         """Stop client thread"""
+        if not self.running:
+            return
         ClientLog.info("Closing...")
         self._running.clear()
         self._socket.close()
@@ -94,3 +111,19 @@ class Client:  # pylint: disable=too-many-instance-attributes
     def __repr__(self) -> str:
         return f"<{type(self).__name__} -> {map_addr(self._addr)}\
 [{map_addr(self._socket.getsockname())}]>"
+
+
+class AppClient(Client):
+    """Application Client, hope it compatible."""
+
+    def read(self) -> bytes:
+        """Read data from server"""
+        if self._placeholder:
+            raise RuntimeError("Cannot push in placeholder client")
+        self._data._data = self._response.output  # pylint: disable=protected-access
+        try:
+            return self._data.unpack_raw(False)  # type: ignore
+        except BinasciiError:
+            return make_message("No data is provided for now or server sent invalid response.", {
+                "Origin": map_addr(self._socket.getsockname())
+            })

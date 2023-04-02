@@ -1,0 +1,13 @@
+{
+    "python.analysis.typeCheckingMode": "basic",
+    "python.linting.pylintEnabled": true,
+    "python.linting.enabled": true,
+    "python.analysis.fixAll": [
+        "source.unusedImports",
+        "source.convertImportFormat"
+    ],
+    "python.analysis.diagnosticSeverityOverrides": {
+        // Let's disable that.
+        "reportWildcardImportFromLibrary": "none",
+    }
+}

@@ -2,7 +2,8 @@
 from logging import DEBUG
 from typing import Literal, NamedTuple
 
-DEFAULT_FORMAT = "[%(levelname)-8s] [%(asctime)s] [%(module)s@%(funcName)s[%(lineno)d]] %(message)s"
+DEFAULT_FORMAT = "[%(name)-10s] [%(levelname)-8s] [%(asctime)s] \
+[%(module)s@%(funcName)s[%(lineno)d]] %(message)s"
 
 
 class FileConfig(NamedTuple):

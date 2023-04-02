@@ -1,0 +1,5 @@
+# GUI Config
+
+RESOLUTION = [1280, 720]
+FULL=false
+MAXFPS=120

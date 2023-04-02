@@ -1,11 +1,16 @@
 """Universal utility"""
-# pylint: disable=method-hidden,redefined-builtin,no-name-in-module
+# pylint: disable=method-hidden,redefined-builtin,no-name-in-module,protected-access
 from logging import Logger
+from shlex import shlex
 from socket import AddressFamily, SocketKind, socket
 from threading import Condition, Event
+from typing import Callable, Literal
+
 from _socket import dup
 
 from .typings import Addr
+from .locals import PSEUDOENV
+from .envtoml import load_from_file
 
 
 class TruthEvent(Condition):
@@ -101,3 +106,47 @@ class LoggedSocket(socket):
         if self._logger:
             new.put_logger(self._logger)
         return new, addr
+
+
+def guess_type(string: str):
+    """Guess a int, float base from string. Return strign if not any match."""
+    if string.isdigit():
+        return int(string)
+    if string.isdecimal():
+        return float(string)
+    return string
+
+
+def map_args(arg: str, guess: bool = False):
+    """Map an argument to something else"""
+    return (a for a in shlex(arg)) if not guess else (guess_type(a) for a in shlex(arg))
+
+
+def mapped(func: Callable[..., None | Literal[True]]):
+    """Map basic Cmd function/command to as compatible as ever."""
+
+    def wrapper(self, arg):
+        return func(self, map_args(arg, True))
+    wrapper._raw = func
+    wrapper.__name__ = func.__name__
+    wrapper.__qualname__ = func.__qualname__
+    wrapper.__doc__ = func.__doc__
+    return wrapper
+
+
+def no_arg(func: Callable[..., None | Literal[True]]):
+    """Map basic Cmd that require no argument."""
+
+    def wrapper(self, arg):  # pylint: disable=unused-argument
+        return func(self)
+
+    wrapper._raw = func
+    wrapper.__name__ = func.__name__
+    wrapper.__qualname__ = func.__qualname__
+    wrapper.__doc__ = func.__doc__
+    return wrapper
+
+
+def load_environ():
+    """Load environ from Pseudo Environ"""
+    return load_from_file(str(PSEUDOENV))

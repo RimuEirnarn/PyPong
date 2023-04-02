@@ -46,6 +46,7 @@ class Server:  # pylint: disable=too-many-instance-attributes
         self._thread = None
         self._connections = listen_for
         self._clients: list[SocketClass] = []
+        self._placeholder = addr == ("", 0)
 
     def _reject_accept(self, client: SocketClass, addr: Addr):
         client.send(transform_error(
@@ -144,6 +145,8 @@ class Server:  # pylint: disable=too-many-instance-attributes
 
     def setup(self):
         """Setup server"""
+        if self._placeholder:
+            raise RuntimeError("Cannot setup on placeholder server")
         if self._has_binded:
             raise StateError("The server has already been binded")
         self._socket.bind((self._host, self._port))
@@ -153,6 +156,8 @@ class Server:  # pylint: disable=too-many-instance-attributes
         self._selector.register(self._socket, EVENT_READ)
 
     def _main_loop(self):
+        if self._placeholder:
+            raise RuntimeError("Cannot run on placeholder server")
         self._running.set()
         if self.closed:
             raise StateError(
