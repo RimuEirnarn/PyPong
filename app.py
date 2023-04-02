@@ -72,8 +72,10 @@ class Application(Cmd):
 
     def do_exit(self, arg):
         """Exit from command line"""
-        self.do_stopclient("")
-        self.do_stopserver("")
+        if self._client.running:
+            self._client.stop()
+        if self._server.running:
+            self._server.stop_thread()
         return True
 
 

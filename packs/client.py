@@ -101,6 +101,8 @@ class Client:  # pylint: disable=too-many-instance-attributes
 
     def stop(self):
         """Stop client thread"""
+        if self._placeholder:
+            return
         if not self.running:
             return
         ClientLog.info("Closing...")

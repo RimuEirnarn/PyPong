@@ -199,6 +199,8 @@ class Server:  # pylint: disable=too-many-instance-attributes
 
     def stop_thread(self):
         """Stop server thread"""
+        if self._placeholder:
+            return
         if not self._thread:
             return
 
